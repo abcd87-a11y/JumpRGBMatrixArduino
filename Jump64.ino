@@ -3,14 +3,15 @@
 #define PIXPIN 7
 #define NUMLEDS 64
 #define JUMPBUTTON 6
+#define WALKBUTTON 9
 #define LED 8
 
 const int helligkeit = 5;
 Adafruit_NeoPixel matrix(NUMLEDS, PIXPIN, NEO_RGB + NEO_KHZ800);
 
 unsigned long millis_alt[2] = { 0, 0 };
-float playerX = 0;
-float playerY = 6;
+float playerX = 0.f;
+float playerY = 6.f;
 
 float velocityY = 0.f;
 float gravity = 0.08f;
@@ -20,6 +21,8 @@ bool isJumping = false;
 bool farbwahl = false;
 
 float speed = -0.009f;
+float playerSpeed = 0.01f;
+
 float startX = 7.f;
 
 bool gameOver = false;
@@ -30,6 +33,7 @@ void setup() {
   matrix.clear();
 
   pinMode(JUMPBUTTON, INPUT_PULLUP);
+  pinMode(WALKBUTTON, INPUT_PULLUP);
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LOW);
   randomSeed(analogRead(A0));
@@ -40,6 +44,7 @@ int r;
 int b;
 
 int begrenzung;
+int levelcnt = 0;
 
 void loop() {
   if (!gameOver) {
@@ -47,11 +52,31 @@ void loop() {
     unsigned long millis_current = millis();
     unsigned long dt = millis_current - millis_alt[0];
     millis_alt[0] = millis_current;
-    
-    boden();
+    if (levelcnt == 0) {
+      boden(0, 8);
+    }
+    if (levelcnt == 1) {
+      boden(0, 3);
+      boden(6, 8);
+
+      if (playerX > 3 && playerX < 6 && playerY > 7) {
+        digitalWrite(LED, HIGH);
+        gameOver = true;
+      } else {
+        digitalWrite(LED, LOW);
+      }
+    }
+
     jump();
 
-    matrix.setPixelColor(getIndex(playerX, constrain(playerY, 0, 6)), 0, 255, 0);
+    matrix.setPixelColor(getIndex(playerX, constrain(playerY, 0, 7)), 0, 255, 0);
+    if (!digitalRead(WALKBUTTON)) playerX += dt * playerSpeed;
+    if (playerX > 8) {
+      playerX = 0;
+      levelcnt++;
+    }
+
+    /*
     if (!farbwahl) {
       begrenzung = random(1, 6);
       do {
@@ -74,7 +99,7 @@ void loop() {
       startX = 6;
       farbwahl = false;
       //speed -= 0.0005;
-    }
+    }*/
   }
   matrix.show();
 }
@@ -83,29 +108,30 @@ uint8_t getIndex(int x, int y) {
   return (y << 3) | x;
 }
 
-void boden(){
-  for(int x = 0; x < 8; x++){
-      matrix.setPixelColor(getIndex(x, 7), 255, 0, 0);
-    }
+void boden(int start, int ende) {
+  for (int x = start; x < ende; x++) {
+    matrix.setPixelColor(getIndex(x, ground), 255, 0, 0);
+  }
 }
 
-void jump(){
+void jump() {
   if (!digitalRead(JUMPBUTTON) && !isJumping) {
-      velocityY = jumpStrength;
-      isJumping = true;
-    }
+    velocityY = jumpStrength;
+    isJumping = true;
+  }
 
-    if (millis() - millis_alt[1] > 30) {
-      if (!digitalRead(JUMPBUTTON)) velocityY += gravity;
-      else velocityY += 0.2;
-      playerY += velocityY;
-      millis_alt[1] = millis();
-    }
+  if (millis() - millis_alt[1] > 30) {
+    if (!digitalRead(JUMPBUTTON)) velocityY += gravity;
+    else velocityY += 0.2;
+    playerY += velocityY;
+    millis_alt[1] = millis();
+  }
 
-    if (playerY >= ground) {
-      playerY = ground;
-      velocityY = 0.f;
-      isJumping = false;
-    }
+  bool ueberAbgrund = (levelcnt == 1 && playerX > 3 && playerX < 6);
+
+    if (playerY >= ground &&!ueberAbgrund) {
+    playerY = 6;
+    velocityY = 0.f;
+    isJumping = false;
+  }
 }
-
