@@ -14,13 +14,13 @@ float playerX = 0.f;
 float playerY = 6.f;
 
 float velocityY = 0.f;
-float gravity = 0.08f;
-float jumpStrength = -1.2f;
+float gravity = 0.082f;
+float jumpStrength = -0.90f;
 float ground = 7.f;
 bool isJumping = false;
 bool farbwahl = false;
 
-float speed = -0.009f;
+
 float playerSpeed = 0.01f;
 
 float startX = 7.f;
@@ -39,12 +39,8 @@ void setup() {
   randomSeed(analogRead(A0));
 }
 
-int g;
-int r;
-int b;
-
 int begrenzung;
-int levelcnt = 0;
+int levelcnt =0;
 
 void loop() {
   if (!gameOver) {
@@ -60,10 +56,21 @@ void loop() {
       boden(6, 8);
 
       if (playerX > 3 && playerX < 6 && playerY > 7) {
-        digitalWrite(LED, HIGH);
         gameOver = true;
       } else {
         digitalWrite(LED, LOW);
+      }
+    }
+
+    if (levelcnt == 2) {
+      boden(0, 8);
+      float speed = -0.009f;
+      for (int y = 6; y > 4; y--) {
+        matrix.setPixelColor(getIndex(startX, y), 0, 0, 255);
+      }
+      startX += dt * speed;
+      if ((int)playerX == (int)startX && playerY > 4) {
+        gameOver = true;
       }
     }
 
@@ -100,7 +107,10 @@ void loop() {
       farbwahl = false;
       //speed -= 0.0005;
     }*/
+  } else {
+    digitalWrite(LED, HIGH);
   }
+
   matrix.show();
 }
 
@@ -129,7 +139,7 @@ void jump() {
 
   bool ueberAbgrund = (levelcnt == 1 && playerX > 3 && playerX < 6);
 
-    if (playerY >= ground &&!ueberAbgrund) {
+  if (playerY >= ground && !ueberAbgrund) {
     playerY = 6;
     velocityY = 0.f;
     isJumping = false;
