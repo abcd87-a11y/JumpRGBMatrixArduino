@@ -20,12 +20,19 @@ float ground = 7.f;
 bool isJumping = false;
 bool farbwahl = false;
 
-
 float playerSpeed = 0.01f;
 
 float startX = 7.f;
 
 bool gameOver = false;
+
+uint8_t pipe[3][4]{
+  { 1, 1, 1, 1 },
+  { 0, 1, 1, 0 },
+  { 0, 1, 1, 0 }
+};
+
+
 
 void setup() {
   matrix.begin();
@@ -40,7 +47,7 @@ void setup() {
 }
 
 int begrenzung;
-int levelcnt =0;
+int levelcnt = 0;
 
 void loop() {
   if (!gameOver) {
@@ -74,6 +81,22 @@ void loop() {
       }
     }
 
+    if (levelcnt == 3) {
+      boden(0, 8);
+      int startX = 4;
+      int startY = 4;
+
+      for (int y = 0; y < 3; y++) {
+        for (int x = 0; x < 4; x++) {
+          if (pipe[y][x]) {
+            int matrixX = startX + x;
+            int matrixY = startY + y;
+
+            matrix.setPixelColor(getIndex(matrixX, matrixY), 255, 0, 0);
+          }
+        }
+      }
+    }
     jump();
 
     matrix.setPixelColor(getIndex(playerX, constrain(playerY, 0, 7)), 0, 255, 0);
@@ -81,32 +104,14 @@ void loop() {
     if (playerX > 8) {
       playerX = 0;
       levelcnt++;
+      if (levelcnt > 2) {
+        ground = 7.f;
+        levelcnt = 0;
+        startX = 7;
+      }
     }
 
-    /*
-    if (!farbwahl) {
-      begrenzung = random(1, 6);
-      do {
-        g = random(0, 256);
-        r = random(0, 256);
-        b = random(0, 256);
-      } while (g + r + b < 255);
-      farbwahl = true;
-    }
-    for (int y = 6; y > begrenzung; y--) {
-      matrix.setPixelColor(getIndex(startX, y), g, r, b);
-    }
 
-    startX += dt * speed;
-    if (startX <= 0 && playerY > begrenzung) {
-      gameOver = true;
-      digitalWrite(LED, HIGH);
-    }
-    if (startX < 0) {
-      startX = 6;
-      farbwahl = false;
-      //speed -= 0.0005;
-    }*/
   } else {
     digitalWrite(LED, HIGH);
   }
@@ -118,11 +123,18 @@ uint8_t getIndex(int x, int y) {
   return (y << 3) | x;
 }
 
+void boden(int start, int ende, int g, int r, int b) {
+  for (int x = start; x < ende; x++) {
+    matrix.setPixelColor(getIndex(x, ground), g, r, b);
+  }
+}
+
 void boden(int start, int ende) {
   for (int x = start; x < ende; x++) {
     matrix.setPixelColor(getIndex(x, ground), 255, 0, 0);
   }
 }
+
 
 void jump() {
   if (!digitalRead(JUMPBUTTON) && !isJumping) {
